@@ -1,3 +1,12 @@
+// Envía una notificación por correo sin que un error de SMTP haga fallar el pipeline
+def notificar(String asunto, String cuerpo) {
+    try {
+        mail to: env.NOTIFY_EMAIL, subject: asunto, body: cuerpo
+    } catch (err) {
+        echo "ADVERTENCIA: no se pudo enviar el correo de notificación (${err.getMessage()})"
+    }
+}
+
 pipeline {
     agent any
 
@@ -172,20 +181,17 @@ pipeline {
             echo 'Pipeline completado sin hallazgos críticos.'
         }
         unstable {
-            mail to: env.NOTIFY_EMAIL,
-                 subject: "[Jenkins] HALLAZGOS DE SEGURIDAD en ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "El pipeline terminó con hallazgos de seguridad o pruebas fallidas.\n\n" +
-                       "Build: ${env.BUILD_URL}\nResumen: ${env.BUILD_URL}artifact/security-summary.md"
+            notificar("[Jenkins] HALLAZGOS DE SEGURIDAD en ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                      "El pipeline terminó con hallazgos de seguridad o pruebas fallidas.\n\n" +
+                      "Build: ${env.BUILD_URL}\nResumen: ${env.BUILD_URL}artifact/security-summary.md")
         }
         failure {
-            mail to: env.NOTIFY_EMAIL,
-                 subject: "[Jenkins] FALLO en ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "El pipeline falló. Revisar: ${env.BUILD_URL}console"
+            notificar("[Jenkins] FALLO en ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                      "El pipeline falló. Revisar: ${env.BUILD_URL}console")
         }
         fixed {
-            mail to: env.NOTIFY_EMAIL,
-                 subject: "[Jenkins] CORREGIDO ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "El pipeline volvió a pasar sin hallazgos críticos: ${env.BUILD_URL}"
+            notificar("[Jenkins] CORREGIDO ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                      "El pipeline volvió a pasar sin hallazgos críticos: ${env.BUILD_URL}")
         }
     }
 }

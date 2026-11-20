@@ -148,10 +148,13 @@ pipeline {
                         echo "Ejecutando OWASP ZAP (intento ${intento} de 3)..."
                         rc = sh(returnStatus: true, script: '''
                             docker rm -f zap-scan 2>/dev/null || true
-                            docker run --name zap-scan --network ${NETWORK} -v zap-wrk:/zap/wrk:rw \
+                            docker create --name zap-scan --network ${NETWORK} -v zap-wrk:/zap/wrk:rw \
                               ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
-                              -t "${APP_URL}/hello?name=test" -m 2 -T 5 -I \
-                              -r zap-report.html -J zap-report.json -w zap-report.md
+                              -t "${APP_URL}/hello?name=test" -m 2 -T 5 -I -c zap-rules.tsv \
+                              -r zap-report.html -J zap-report.json -w zap-report.md > /dev/null
+                            # Reglas de ZAP con falsos positivos documentados (ver docs/FALSOS_POSITIVOS.md)
+                            docker cp zap-rules.tsv zap-scan:/zap/wrk/zap-rules.tsv
+                            docker start -a zap-scan
                         ''')
                     }
                     sh '''

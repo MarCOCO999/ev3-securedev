@@ -1,0 +1,66 @@
+name: ev3-infra
+
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube-ev3
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks: [devsecops]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    networks: [devsecops]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=EV3-Grafana-2026
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on: [prometheus]
+    networks: [devsecops]
+    restart: unless-stopped
+
+  # Simulador de ataque para la prueba de monitoreo:
+  #   docker compose --profile attack run --rm attacker
+  attacker:
+    image: curlimages/curl:8.10.1
+    profiles: ["attack"]
+    entrypoint: ["sh", "/scripts/simulate_attack.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+    networks: [devsecops]
+
+networks:
+  devsecops:
+    name: devsecops
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  grafana_data:

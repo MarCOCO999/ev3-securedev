@@ -1,0 +1,12 @@
+.sec/
+venv/
+__pycache__/
+.pytest_cache/
+.scannerwork/
+build-info.txt
+test-results.xml
+security-summary.md
+bandit-report.*
+pip-audit.*
+dependency-check-report.*
+zap-report.*

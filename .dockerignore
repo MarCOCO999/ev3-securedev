@@ -1,0 +1,11 @@
+.git
+.sec
+infra
+scripts
+*.html
+*.json
+*.xml
+*.md
+build-info.txt
+__pycache__
+.pytest_cache

@@ -142,12 +142,18 @@ pipeline {
                         docker run --rm -u root -v zap-wrk:/zap/wrk ghcr.io/zaproxy/zaproxy:stable \
                           sh -c "rm -f /zap/wrk/zap-report.* && chmod 777 /zap/wrk"
                     '''
-                    def rc = sh(returnStatus: true, script: '''
-                        docker run --name zap-scan --network ${NETWORK} -v zap-wrk:/zap/wrk:rw \
-                          ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
-                          -t "${APP_URL}/hello?name=test" -m 2 -T 15 -I \
-                          -r zap-report.html -J zap-report.json -w zap-report.md
-                    ''')
+                    // Código 3 = ZAP no pudo iniciar (p. ej. falla de red al actualizar complementos): se reintenta
+                    def rc = 3
+                    for (int intento = 1; intento <= 3 && rc == 3; intento++) {
+                        echo "Ejecutando OWASP ZAP (intento ${intento} de 3)..."
+                        rc = sh(returnStatus: true, script: '''
+                            docker rm -f zap-scan 2>/dev/null || true
+                            docker run --name zap-scan --network ${NETWORK} -v zap-wrk:/zap/wrk:rw \
+                              ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
+                              -t "${APP_URL}/hello?name=test" -m 2 -T 5 -I \
+                              -r zap-report.html -J zap-report.json -w zap-report.md
+                        ''')
+                    }
                     sh '''
                         docker cp zap-scan:/zap/wrk/zap-report.html . || true
                         docker cp zap-scan:/zap/wrk/zap-report.json . || true

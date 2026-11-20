@@ -76,8 +76,13 @@ def section_pip_audit(lines):
         return 0
     deps = data.get("dependencies", data) if isinstance(data, dict) else data
     rows = []
+    seen = set()
     for d in deps:
         for v in d.get("vulns", []):
+            key = (d.get("name"), v.get("id"))
+            if key in seen:
+                continue
+            seen.add(key)
             fixes = ", ".join(v.get("fix_versions", [])) or "sin versión corregida"
             aliases = ", ".join(a for a in v.get("aliases", []) if a.startswith("CVE")) or "-"
             rows.append(f"| {d.get('name')} | {d.get('version')} | {v.get('id')} | {aliases} | {fixes} |")

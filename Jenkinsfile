@@ -135,7 +135,13 @@ pipeline {
             steps {
                 echo 'Escaneo dinámico con OWASP ZAP sobre la aplicación desplegada...'
                 script {
-                    sh 'docker rm -f zap-scan 2>/dev/null || true; docker volume create zap-wrk > /dev/null'
+                    sh '''
+                        docker rm -f zap-scan 2>/dev/null || true
+                        docker volume create zap-wrk > /dev/null
+                        # Permite que el usuario "zap" del contenedor escriba los reportes en el volumen
+                        docker run --rm -u root -v zap-wrk:/zap/wrk ghcr.io/zaproxy/zaproxy:stable \
+                          sh -c "rm -f /zap/wrk/zap-report.* && chmod 777 /zap/wrk"
+                    '''
                     def rc = sh(returnStatus: true, script: '''
                         docker run --name zap-scan --network ${NETWORK} -v zap-wrk:/zap/wrk:rw \
                           ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \

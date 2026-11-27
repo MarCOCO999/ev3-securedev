@@ -5,6 +5,6 @@ MarkupSafe==3.0.3
 itsdangerous==2.2.0
 click==8.5.0
 blinker==1.9.0
-gunicorn==23.0.0
+gunicorn==27.0.1
 prometheus-flask-exporter==0.23.2
 prometheus-client==0.21.1
